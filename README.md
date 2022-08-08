@@ -1,3 +1,1 @@
 # Aczel
-
-Zigatur Connector
