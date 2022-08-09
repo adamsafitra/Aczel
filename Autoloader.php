@@ -2,76 +2,74 @@
 namespace Aczel;
 
 final class Autoloader {
-  final public function __construct($path = null){
-    spl_autoload_register(function($class){
-      $class = explode("\\", $class);
-      $class = end($class);
-      require_once __DIR__ . $path . $class . ".php";
-    });
+  final public function __construct(
+      protected string $path = "",
+      bool $is_test = false
+  ) {
+    $fn = 'register';
+    $ext = '.php';
+
+    if ($is_test) {
+      $fn = 'register_test';
+      $ext = '_test.php';
+    }
+
+    // set_include_path('./');
+    // spl_autoload_extensions($ext);
+    spl_autoload_register(array($this, $fn));
   }
-}
 
-try {
+  final protected function register($class) {
+    $class = explode('\\', $class);
+    $class = end($class);
+    $class = __DIR__ . '/' . $class . '.php';
 
-} catch(Throwable $e) {
-	print $e->getMessage();
-} catch(ArithmeticException $e) {
-	print $e->getMessage();
-} catch(Exception $e) {
-	echo $e->getMessage();
-} finally {
+    if (file_exists($class)) {
+      require_once $class;
+      return true;
+    }
 
-}
+    echo __FILE__ . ": $class not found<br>\n";
+    return false;
+  }
 
-/*
-class Autoloader {
-  public static function register(){
-    spl_autoload_register(function($class){
-      $file = str_replace('\\', DIRECTORY_SEPARATOR, $class).'.php';
-      if (file_exists($file)) {
-        require $file;
-        return true;
+  final public function register_test($class) {
+    $class = explode('\\', $class);
+    $class = end($class);
+    $class = __DIR__. '/' . $class . '_test.php';
+
+    if (file_exists($class)) {
+      require_once $class;
+      echo $class . "<br>\n";
+      return true;
+    }
+
+    echo __FILE__ . ": $class not found<br>\n";
+    return false;
+  }
+
+  final public static function autoload($path = __DIR__) {
+    $files = scandir($path);
+
+    foreach ($files as $file) {
+      if (substr($file, 0, 1) == '.') {
+        continue;
       }
 
-      return false;
-    });
+      $file = $path . DIRECTORY_SEPARATOR . $file;
+
+      if (is_file($file)) {
+        require_once $file;
+        continue;
+      }
+
+      if (is_dir($file)) {
+        self::autoload($file);
+      }
+    }
+  }
+
+  public function test($msg) {
+    echo $msg . ' in ' . __FILE__ . '<br>';
   }
 }
-
-class Autoload {
-  public function __construct(){
-    spl_autoload_extensions(".php");
-    spl_autoload_register();
-  }
-}
-
-
-//-----------------------------------
-
-// Your custom class dir
-define('CLASS_DIR', 'class/');
-
-// Add your class dir to include path
-set_include_path(get_include_path().PATH_SEPARATOR.CLASS_DIR);
-
-/**
-This adds the include path to THE END of the paths PHP will scan for the class file, resulting in a bunch of misses (file-not-found's) before actually looking into the CLASS_DIR.
-A more sensible approach, then would be to write
-**
-
-set_include_path(
-  CLASS_DIR.
-  PATH_SEPARATOR,
-  get_include_path()
-); 
-
-
-//---------------------------------------------
-function autoload($className){
-  set_include_path('./library/classes/');
-  spl_autoload($className); //replaces include/require
-}
-spl_autoload_extensions('.class.php');
-spl_autoload_register('autoload'); 
-//-------------------------------------------------
-*/
